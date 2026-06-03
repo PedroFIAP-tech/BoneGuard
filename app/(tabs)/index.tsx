@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -15,7 +16,7 @@ import { ScoreRing } from '../../src/components/ui/ScoreRing';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
 import { colors } from '../../src/styles/theme';
-import { styles } from './index.styles';
+import { styles } from '../../src/styles/index.styles';
 
 const ATALHOS = [
   { label: 'Avaliar risco', icon: '📋', route: '/(tabs)/questionario' },
@@ -31,8 +32,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const ultima = avaliacoes[avaliacoes.length - 1] ?? null;
-  const historico = avaliacoes.slice(-5);
+  const ultima = avaliacoes[0] ?? null;
+  const historico = avaliacoes.slice(0, 5).reverse();
 
   const fetchData = async () => {
     if (!paciente) return;
@@ -48,9 +49,11 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [paciente]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [paciente])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

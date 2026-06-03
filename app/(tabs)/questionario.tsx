@@ -3,10 +3,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { showAlert } from '../../src/utils/alert';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { avaliacaoService } from '../../src/services/avaliacaoService';
@@ -14,7 +14,7 @@ import { ProgressBar } from '../../src/components/ui/ProgressBar';
 import { Button } from '../../src/components/ui/Button';
 import { Card } from '../../src/components/ui/Card';
 import { colors } from '../../src/styles/theme';
-import { styles } from './questionario.styles';
+import { styles } from '../../src/styles/questionario.styles';
 
 interface QuestionarioRespostas {
   historicoFamiliar: boolean;
@@ -136,7 +136,7 @@ export default function QuestionarioScreen() {
 
   const avancar = async () => {
     if (respostaAtual === undefined) {
-      Alert.alert('Escolha uma opção', 'Selecione uma resposta antes de continuar.');
+      showAlert('Escolha uma opção', 'Selecione uma resposta antes de continuar.');
       return;
     }
 
@@ -153,7 +153,7 @@ export default function QuestionarioScreen() {
       const avaliacao = await avaliacaoService.criar({ pacienteId: paciente.id, scoreRisco });
       router.push({ pathname: '/resultado', params: { avaliacaoId: avaliacao.id } });
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         'Erro ao salvar',
         error.response?.data?.message ?? 'Não foi possível registrar sua avaliação. Tente novamente.'
       );

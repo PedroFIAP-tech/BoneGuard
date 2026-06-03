@@ -4,31 +4,31 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { showConfirm } from '../../src/utils/alert';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
-import { styles } from './perfil.styles';
+import { colors } from '../../src/styles/theme';
+import { styles } from '../../src/styles/perfil.styles';
 
 export default function PerfilScreen() {
   const { paciente, logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Sair', 'Deseja encerrar sua sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          setLoggingOut(true);
-          await logout();
-        },
+    showConfirm(
+      'Sair',
+      'Deseja encerrar sua sessão?',
+      async () => {
+        setLoggingOut(true);
+        await logout();
       },
-    ]);
+      'Sair',
+      'Cancelar',
+    );
   };
 
   const iniciais = paciente?.nome

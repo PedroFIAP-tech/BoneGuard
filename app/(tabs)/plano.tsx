@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -12,9 +13,105 @@ import { planoService } from '../../src/services/planoService';
 import { avaliacaoService } from '../../src/services/avaliacaoService';
 import { Badge } from '../../src/components/ui/Badge';
 import { Card } from '../../src/components/ui/Card';
-import { colors } from '../../src/styles/theme';
-import { styles } from './plano.styles';
+import { colors, fonts } from '../../src/styles/theme';
+import { styles } from '../../src/styles/plano.styles';
 import { PlanoSaude } from '../../src/types';
+
+const EXERCICIO_ICONS = ['🏋️', '🚴', '🧘', '🚶', '⚖️', '💪', '🏃'];
+const NUTRICAO_ICONS  = ['🥛', '☀️', '🥩', '🫐', '🐟', '💊', '🥦'];
+
+const GARBAGE_PATTERNS = [
+  /^(nome|idade|sexo|peso|atividade|histórico familiar|cálcio na dieta|data|score|classificação)\s*:/i,
+  /^(perfil do paciente|histórico de avaliações)/i,
+  /paciente id=/i,
+  /^com base nos resultados da busca/i,
+  /^podemos gerar um plano/i,
+];
+
+function isGarbage(line: string): boolean {
+  const content = line.trim().replace(/^[*\-+]\s+/, '');
+  return GARBAGE_PATTERNS.some((p) => p.test(content));
+}
+
+function parseBullets(descricao: string): { bullets: string[]; intro: string } {
+  const linhas = descricao.split('\n').filter((l) => !isGarbage(l));
+  const bullets: string[] = [];
+  const introParts: string[] = [];
+
+  for (const linha of linhas) {
+    const t = linha.trim();
+    if (t.startsWith('* ') || t.startsWith('- ')) {
+      bullets.push(t.slice(2).trim());
+    } else if (bullets.length === 0 && t && !t.startsWith('**') && !t.startsWith('+')) {
+      introParts.push(t);
+    }
+  }
+
+  return { bullets, intro: introParts.join(' ') };
+}
+
+function PlanoConteudo({ descricao, categoria }: { descricao: string; categoria: string }) {
+  const { bullets: allBullets, intro } = parseBullets(descricao);
+  const bullets = allBullets.slice(0, 7);
+
+  if (categoria === 'EXERCICIO') {
+    return (
+      <View style={{ gap: 10 }}>
+        {!!intro && (
+          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.text3, lineHeight: 19, fontStyle: 'italic' }}>
+            {intro}
+          </Text>
+        )}
+        {bullets.map((item, i) => {
+          const commaIdx = item.indexOf(',');
+          const hasTitle = commaIdx > 0 && commaIdx < 55;
+          const titulo = hasTitle ? item.slice(0, commaIdx).trim() : item;
+          const detalhe = hasTitle ? item.slice(commaIdx + 1).trim() : '';
+          return (
+            <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: colors.bg2, borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: colors.accent }}>
+              <Text style={{ fontSize: 22, lineHeight: 28 }}>{EXERCICIO_ICONS[i % EXERCICIO_ICONS.length]}</Text>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, lineHeight: 20 }}>{titulo}</Text>
+                {!!detalhe && <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.text2, lineHeight: 18 }}>{detalhe}</Text>}
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
+
+  // Nutrição — lista fluida sem cards pesados
+  return (
+    <View style={{ gap: 0 }}>
+      {!!intro && (
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.text3, lineHeight: 19, fontStyle: 'italic', marginBottom: 12 }}>
+          {intro}
+        </Text>
+      )}
+      {bullets.map((item, i) => {
+        const colonIdx = item.indexOf(':');
+        const hasLabel = colonIdx > 0 && colonIdx < 40;
+        const label = hasLabel ? item.slice(0, colonIdx).trim() : null;
+        const valor = hasLabel ? item.slice(colonIdx + 1).trim() : item;
+        return (
+          <View key={i}>
+            {i > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+              <Text style={{ fontSize: 18, lineHeight: 24, marginTop: 1 }}>{NUTRICAO_ICONS[i % NUTRICAO_ICONS.length]}</Text>
+              <View style={{ flex: 1 }}>
+                {label && (
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, lineHeight: 20 }}>{label}</Text>
+                )}
+                <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.text2, lineHeight: 20 }}>{valor}</Text>
+              </View>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function PlanoScreen() {
   const { paciente } = useAuth();
@@ -27,31 +124,26 @@ export default function PlanoScreen() {
   const carregarPlanos = useCallback(async () => {
     if (!paciente) return;
     try {
-      // Tenta buscar planos existentes (cache do backend)
-      let lista = await planoService.buscarPorPaciente(paciente.id);
+      const historico = await avaliacaoService.buscarHistorico(paciente.id);
+      const avaliacoes = historico.avaliacoes ?? [];
 
-      // Se não tiver planos, busca última avaliação e gera
-      if (lista.length === 0) {
-        const historico = await avaliacaoService.buscarHistorico(paciente.id);
-        const avaliacoes = historico.avaliacoes ?? [];
-        if (avaliacoes.length > 0) {
-          const ultima = avaliacoes[avaliacoes.length - 1];
-          setUltimaClassificacao(ultima.classificacao);
-          lista = await planoService.gerarPlanos(ultima.id);
-        }
-      } else {
-        // Pega classificação da última avaliação para o badge
-        try {
-          const historico = await avaliacaoService.buscarHistorico(paciente.id);
-          const avaliacoes = historico.avaliacoes ?? [];
-          if (avaliacoes.length > 0) {
-            setUltimaClassificacao(avaliacoes[avaliacoes.length - 1].classificacao);
-          }
-        } catch {
-          // não bloqueia se falhar
-        }
+      if (avaliacoes.length === 0) {
+        setPlanos([]);
+        return;
       }
 
+      const ultima = avaliacoes[0];
+      setUltimaClassificacao(ultima.classificacao);
+
+      // Se a avaliação mais recente ainda não tem plano, gera agora
+      if (!ultima.planoGerado) {
+        const novos = await planoService.gerarPlanos(ultima.id);
+        setPlanos(novos);
+        return;
+      }
+
+      // Caso contrário busca os planos existentes
+      const lista = await planoService.buscarPorPaciente(paciente.id);
       setPlanos(lista);
     } catch {
       // silencia — lista permanece vazia
@@ -60,9 +152,12 @@ export default function PlanoScreen() {
     }
   }, [paciente]);
 
-  useEffect(() => {
-    carregarPlanos();
-  }, [carregarPlanos]);
+  useFocusEffect(
+    useCallback(() => {
+      setIsLoading(true);
+      carregarPlanos();
+    }, [carregarPlanos])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -126,7 +221,7 @@ export default function PlanoScreen() {
           ) : (
             exercicios.map((plano) => (
               <Card key={plano.id} style={styles.itemCard}>
-                <Text style={styles.itemDescricao}>{plano.descricao}</Text>
+                <PlanoConteudo descricao={plano.descricao} categoria={plano.categoria} />
                 <Text style={styles.itemData}>Gerado em {plano.dataCriacao}</Text>
               </Card>
             ))
@@ -141,7 +236,7 @@ export default function PlanoScreen() {
           ) : (
             nutricao.map((plano) => (
               <Card key={plano.id} style={styles.itemCard}>
-                <Text style={styles.itemDescricao}>{plano.descricao}</Text>
+                <PlanoConteudo descricao={plano.descricao} categoria={plano.categoria} />
                 <Text style={styles.itemData}>Gerado em {plano.dataCriacao}</Text>
               </Card>
             ))

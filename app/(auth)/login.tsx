@@ -3,19 +3,19 @@ import {
   View,
   Text,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Animated,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '../../src/utils/alert';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { Input } from '../../src/components/ui/Input';
 import { colors } from '../../src/styles/theme';
-import { styles } from './login.styles';
+import { styles } from '../../src/styles/login.styles';
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -50,15 +50,15 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !senha) {
-      Alert.alert('Campos obrigatórios', 'Preencha o e-mail e a senha para continuar.');
+      showAlert('Campos obrigatórios', 'Preencha o e-mail e a senha para continuar.');
       return;
     }
     if (!validateEmail(email)) {
-      Alert.alert('E-mail inválido', 'Digite um endereço de e-mail válido.');
+      showAlert('E-mail inválido', 'Digite um endereço de e-mail válido.');
       return;
     }
     if (senha.length < 8) {
-      Alert.alert('Senha muito curta', 'A senha deve ter pelo menos 8 caracteres.');
+      showAlert('Senha muito curta', 'A senha deve ter pelo menos 8 caracteres.');
       return;
     }
     setLoading(true);
@@ -69,7 +69,7 @@ export default function LoginScreen() {
         error.response?.status === 401
           ? 'E-mail não encontrado ou senha incorreta. Tente de novo.'
           : error.response?.data?.message ?? 'Algo deu errado. Tente novamente em instantes.';
-      Alert.alert('Não foi possível entrar', msg);
+      showAlert('Não foi possível entrar', msg);
     } finally {
       setLoading(false);
     }

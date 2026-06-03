@@ -14,7 +14,7 @@ import { ProgressBar } from '../src/components/ui/ProgressBar';
 import { Button } from '../src/components/ui/Button';
 import { Card } from '../src/components/ui/Card';
 import { colors } from '../src/styles/theme';
-import { styles } from './upload-raio-x.styles';
+import { styles } from '../src/styles/upload-raio-x.styles';
 
 const MENSAGENS = ['Enviando imagem...', 'Detectando densidade óssea...', 'Gerando diagnóstico...'];
 

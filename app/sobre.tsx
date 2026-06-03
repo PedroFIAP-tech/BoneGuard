@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Card } from '../src/components/ui/Card';
 import { COMMIT_HASH, APP_VERSION } from '../src/utils/commitHash';
-import { styles } from './sobre.styles';
+import { styles } from '../src/styles/sobre.styles';
 
 const EQUIPE = [
   { nome: 'Pedro Henrique da Silva', rm: 'RM 560393', area: 'Mobile (React Native)' },

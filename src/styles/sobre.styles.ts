@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, fonts, radius } from './src/styles/theme';
+import { colors, fonts, radius } from './theme';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },

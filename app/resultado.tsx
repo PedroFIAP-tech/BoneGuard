@@ -15,7 +15,7 @@ import { Card } from '../src/components/ui/Card';
 import { Button } from '../src/components/ui/Button';
 import { ProgressBar } from '../src/components/ui/ProgressBar';
 import { colors } from '../src/styles/theme';
-import { styles } from './resultado.styles';
+import { styles } from '../src/styles/resultado.styles';
 
 export default function ResultadoScreen() {
   const { avaliacaoId } = useLocalSearchParams<{ avaliacaoId: string }>();

@@ -3,19 +3,19 @@ import {
   View,
   Text,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Animated,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '../../src/utils/alert';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { Input } from '../../src/components/ui/Input';
 import { colors } from '../../src/styles/theme';
-import { styles } from './cadastro.styles';
+import { styles } from '../../src/styles/cadastro.styles';
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -50,25 +50,25 @@ export default function CadastroScreen() {
 
   const handleCadastro = async () => {
     if (!nome.trim() || !email.trim() || !senha || !idade || !peso) {
-      Alert.alert('Campos obrigatórios', 'Preencha todos os campos para criar sua conta.');
+      showAlert('Campos obrigatórios', 'Preencha todos os campos para criar sua conta.');
       return;
     }
     if (!validateEmail(email)) {
-      Alert.alert('E-mail inválido', 'Digite um endereço de e-mail válido.');
+      showAlert('E-mail inválido', 'Digite um endereço de e-mail válido.');
       return;
     }
     if (senha.length < 6) {
-      Alert.alert('Senha muito curta', 'Escolha uma senha com pelo menos 6 caracteres.');
+      showAlert('Senha muito curta', 'Escolha uma senha com pelo menos 6 caracteres.');
       return;
     }
     const idadeNum = Number(idade);
     if (isNaN(idadeNum) || idadeNum < 1 || idadeNum > 120) {
-      Alert.alert('Idade inválida', 'Digite uma idade entre 1 e 120 anos.');
+      showAlert('Idade inválida', 'Digite uma idade entre 1 e 120 anos.');
       return;
     }
     const pesoNum = Number(peso);
     if (isNaN(pesoNum) || pesoNum < 20 || pesoNum > 300) {
-      Alert.alert('Peso inválido', 'Digite um peso entre 20 e 300 kg.');
+      showAlert('Peso inválido', 'Digite um peso entre 20 e 300 kg.');
       return;
     }
 
@@ -90,7 +90,7 @@ export default function CadastroScreen() {
         error.response?.status === 409
           ? 'Este e-mail já está cadastrado. Tente fazer login.'
           : error.response?.data?.message ?? 'Não foi possível criar sua conta. Tente novamente.';
-      Alert.alert('Erro ao criar conta', msg);
+      showAlert('Erro ao criar conta', msg);
     } finally {
       setLoading(false);
     }
