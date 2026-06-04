@@ -1,0 +1,51 @@
+import { StyleSheet } from 'react-native';
+import { colors, fonts, radius } from './theme';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  title: { fontFamily: fonts.heading, fontSize: 22, color: colors.text, marginBottom: 20 },
+  progressArea: { gap: 6, marginBottom: 20 },
+  progressText: { fontFamily: fonts.body, fontSize: 11, color: colors.text3, textAlign: 'right' },
+  nasaCard: { backgroundColor: colors.bg3, marginBottom: 24 },
+  nasaTag: { fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.accent2, marginBottom: 6 },
+  nasaText: { fontFamily: fonts.body, fontSize: 13, color: colors.text2, lineHeight: 20 },
+  pergunta: {
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    color: colors.text,
+    lineHeight: 26,
+    marginBottom: 20,
+  },
+  opcoes: { gap: 10, marginBottom: 32 },
+  opcao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: 14,
+  },
+  opcaoSelecionada: { borderColor: colors.accent, backgroundColor: 'rgba(58,155,220,0.1)' },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    borderColor: colors.text3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioAtivo: { borderColor: colors.accent },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+  },
+  opcaoLabel: { fontFamily: fonts.body, fontSize: 14, color: colors.text2, flex: 1 },
+  opcaoLabelAtiva: { color: colors.text },
+  actions: { flexDirection: 'row', gap: 12 },
+});

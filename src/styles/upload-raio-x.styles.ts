@@ -1,0 +1,40 @@
+import { StyleSheet } from 'react-native';
+import { colors, fonts, radius } from './theme';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg, padding: 20, paddingTop: 60 },
+  back: { marginBottom: 20 },
+  backText: { fontFamily: fonts.body, fontSize: 14, color: colors.accent2 },
+  title: { fontFamily: fonts.heading, fontSize: 24, color: colors.text, marginBottom: 8 },
+  subtitle: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.text2,
+    lineHeight: 20,
+    marginBottom: 28,
+  },
+  botoes: { flexDirection: 'row', gap: 14, marginBottom: 24 },
+  uploadBtn: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: 20,
+    alignItems: 'center',
+    gap: 6,
+  },
+  uploadIcon: { fontSize: 32 },
+  uploadLabel: { fontFamily: fonts.heading, fontSize: 14, color: colors.text },
+  uploadSub: { fontFamily: fonts.body, fontSize: 11, color: colors.text3 },
+  previewContainer: { marginBottom: 20, alignItems: 'center', gap: 12 },
+  preview: { width: '100%', height: 220, borderRadius: radius.lg, backgroundColor: colors.card },
+  trocar: { alignSelf: 'center' },
+  trocarText: { fontFamily: fonts.body, fontSize: 13, color: colors.accent2 },
+  loadingCard: { marginBottom: 16, gap: 10 },
+  loadingMsg: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text2 },
+  analisarBtn: { marginBottom: 24 },
+  infoCard: { backgroundColor: colors.bg3 },
+  infoTitle: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.accent2, marginBottom: 8 },
+  infoText: { fontFamily: fonts.body, fontSize: 12, color: colors.text2, lineHeight: 18 },
+});
