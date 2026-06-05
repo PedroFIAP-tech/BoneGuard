@@ -117,6 +117,7 @@ export default function PlanoScreen() {
   const { paciente } = useAuth();
   const [planos, setPlanos] = useState<PlanoSaude[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [gerando, setGerando] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState<'exercicios' | 'nutricao'>('exercicios');
   const [ultimaClassificacao, setUltimaClassificacao] = useState<'BAIXO' | 'MODERADO' | 'ALTO' | null>(null);
@@ -138,11 +139,14 @@ export default function PlanoScreen() {
       // Tenta gerar plano para a avaliação mais recente se ainda não foi gerado
       if (!ultima.planoGerado) {
         try {
+          setGerando(true);
           const novos = await planoService.gerarPlanos(ultima.id);
           setPlanos(novos);
           return;
         } catch {
           // Geração falhou — cai para mostrar planos anteriores
+        } finally {
+          setGerando(false);
         }
       }
 
@@ -177,10 +181,15 @@ export default function PlanoScreen() {
   const exercicios = planos.filter((p) => p.categoria === 'EXERCICIO');
   const nutricao = planos.filter((p) => p.categoria === 'NUTRICAO');
 
-  if (isLoading) {
+  if (isLoading || gerando) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
+        {gerando && (
+          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.text3, marginTop: 12, textAlign: 'center' }}>
+            Gerando seu plano personalizado com IA...
+          </Text>
+        )}
       </View>
     );
   }
