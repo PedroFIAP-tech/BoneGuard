@@ -135,18 +135,27 @@ export default function PlanoScreen() {
       const ultima = avaliacoes[0];
       setUltimaClassificacao(ultima.classificacao);
 
-      // Se a avaliação mais recente ainda não tem plano, gera agora
+      // Tenta gerar plano para a avaliação mais recente se ainda não foi gerado
       if (!ultima.planoGerado) {
-        const novos = await planoService.gerarPlanos(ultima.id);
-        setPlanos(novos);
-        return;
+        try {
+          const novos = await planoService.gerarPlanos(ultima.id);
+          setPlanos(novos);
+          return;
+        } catch {
+          // Geração falhou — cai para mostrar planos anteriores
+        }
       }
 
-      // Caso contrário busca os planos existentes
-      const lista = await planoService.buscarPorPaciente(paciente.id);
-      setPlanos(lista);
+      // Busca todos os planos e filtra pela avaliação mais recente com plano
+      const todos = await planoService.buscarPorPaciente(paciente.id);
+      const ultimaComPlano = avaliacoes.find((a) => a.planoGerado);
+      if (ultimaComPlano) {
+        setPlanos(todos.filter((p) => p.avaliacaoId === ultimaComPlano.id));
+      } else {
+        setPlanos(todos);
+      }
     } catch {
-      // silencia — lista permanece vazia
+      // silencia
     } finally {
       setIsLoading(false);
     }
