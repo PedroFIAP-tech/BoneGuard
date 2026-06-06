@@ -31,4 +31,11 @@ export const styles = StyleSheet.create({
   barValue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
   errorText: { fontFamily: fonts.body, fontSize: 14, color: colors.danger },
   planoBtn: {},
+  raioxCard: { marginBottom: 16 },
+  raioxHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  raioxClassificacao: { fontFamily: fonts.heading, fontSize: 18 },
+  raioxConfiancaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  raioxConfiancaLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.text3 },
+  raioxConfiancaVal: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.text },
+  raioxDensito: { fontFamily: fonts.body, fontSize: 12, color: colors.text3, marginTop: 8 },
 });

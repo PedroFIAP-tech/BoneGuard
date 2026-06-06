@@ -63,3 +63,12 @@ export interface PlanoSaude {
   ativo: boolean;
   dataCriacao: string;
 }
+
+export interface Radiografia {
+  id: number;
+  avaliacaoId: number;
+  resultadoIA: string;
+  confianca: number;
+  densitometria: number | null;
+  dataAnalise: string;
+}

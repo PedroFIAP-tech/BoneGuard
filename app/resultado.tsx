@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { avaliacaoService } from '../src/services/avaliacaoService';
-import { Avaliacao } from '../src/types';
+import { Avaliacao, Radiografia } from '../src/types';
 import { ScoreRing } from '../src/components/ui/ScoreRing';
 import { Badge } from '../src/components/ui/Badge';
 import { Card } from '../src/components/ui/Card';
@@ -17,8 +17,55 @@ import { ProgressBar } from '../src/components/ui/ProgressBar';
 import { colors } from '../src/styles/theme';
 import { styles } from '../src/styles/resultado.styles';
 
+function classificacaoColor(resultado: string): string {
+  const r = resultado.toLowerCase();
+  if (r === 'normal') return colors.accent3;
+  if (r.includes('osteopenia')) return colors.warn;
+  if (r.includes('osteoporose') || r.includes('osteoporosis')) return colors.danger;
+  if (r === 'suspeito') return colors.warn;
+  return colors.accent2;
+}
+
+function classificacaoPtBR(resultado: string): string {
+  const r = resultado.toLowerCase();
+  if (r === 'normal') return 'Normal';
+  if (r.includes('osteopenia')) return 'Osteopenia';
+  if (r.includes('osteoporose') || r.includes('osteoporosis')) return 'Osteoporose';
+  if (r === 'suspeito') return 'Suspeito';
+  return resultado;
+}
+
+function RaioxCard({ radiografia }: { radiografia: Radiografia }) {
+  const cor = classificacaoColor(radiografia.resultadoIA);
+  const label = classificacaoPtBR(radiografia.resultadoIA);
+  const pct = Math.round(radiografia.confianca * 100);
+
+  return (
+    <Card style={styles.raioxCard}>
+      <Text style={styles.sectionTitle}>🦴 Análise de Raio-X (IA)</Text>
+      <View style={styles.raioxHeader}>
+        <Text style={[styles.raioxClassificacao, { color: cor }]}>{label}</Text>
+        <Text style={[styles.raioxConfiancaVal, { color: cor }]}>{pct}% confiança</Text>
+      </View>
+      <View style={styles.raioxConfiancaRow}>
+        <Text style={styles.raioxConfiancaLabel}>Precisão do modelo</Text>
+      </View>
+      <ProgressBar progress={radiografia.confianca} color={cor} />
+      {radiografia.densitometria != null && (
+        <Text style={styles.raioxDensito}>
+          Densitometria estimada: {radiografia.densitometria.toFixed(1)} T-score
+        </Text>
+      )}
+    </Card>
+  );
+}
+
 export default function ResultadoScreen() {
-  const { avaliacaoId } = useLocalSearchParams<{ avaliacaoId: string }>();
+  const { avaliacaoId, radiografia: radiografiaParam } = useLocalSearchParams<{
+    avaliacaoId: string;
+    radiografia?: string;
+  }>();
+  const radiografia: Radiografia | null = radiografiaParam ? JSON.parse(radiografiaParam) : null;
   const [avaliacao, setAvaliacao] = useState<Avaliacao | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +143,9 @@ export default function ResultadoScreen() {
           </View>
         </View>
       </Card>
+
+      {/* Análise do raio-X pelo modelo de IA */}
+      {radiografia && <RaioxCard radiografia={radiografia} />}
 
       {/* Explicação baseada na classificação */}
       <Card style={styles.iaCard}>

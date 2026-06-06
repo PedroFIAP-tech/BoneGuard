@@ -1,7 +1,8 @@
 import { api } from './api';
+import { Radiografia } from '../types';
 
 export const visionService = {
-  async analisarRaioX(imageUri: string, avaliacaoId: number) {
+  async analisarRaioX(imageUri: string, avaliacaoId: number): Promise<Radiografia> {
     const formData = new FormData();
     formData.append('imagem', {
       uri: imageUri,
@@ -10,7 +11,7 @@ export const visionService = {
     } as any);
     formData.append('avaliacaoId', String(avaliacaoId));
 
-    const res = await api.post('/radiografias/upload', formData, {
+    const res = await api.post<Radiografia>('/radiografias/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 30000,
     });

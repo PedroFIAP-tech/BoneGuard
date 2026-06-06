@@ -76,10 +76,13 @@ export default function UploadRaioXScreen() {
     }, 2800);
 
     try {
-      await visionService.analisarRaioX(imageUri, Number(avaliacaoId));
+      const radiografia = await visionService.analisarRaioX(imageUri, Number(avaliacaoId));
       clearInterval(intervalo);
       setProgresso(1);
-      router.push({ pathname: '/resultado', params: { avaliacaoId } });
+      router.push({
+        pathname: '/resultado',
+        params: { avaliacaoId, radiografia: JSON.stringify(radiografia) },
+      });
     } catch (error: any) {
       clearInterval(intervalo);
       const msg =
