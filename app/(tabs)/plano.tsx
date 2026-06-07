@@ -33,8 +33,40 @@ function isGarbage(line: string): boolean {
   return GARBAGE_PATTERNS.some((p) => p.test(content));
 }
 
+const RECOMENDACAO_RE = /recomenda[cç][aã]o\s+objetiva\s*:\s*/gi;
+
+function normalizarDescricao(descricao: string): string {
+  // Formato 1: "Recomendação objetiva: X. Recomendação objetiva: Y."
+  if (RECOMENDACAO_RE.test(descricao)) {
+    RECOMENDACAO_RE.lastIndex = 0;
+    return descricao
+      .split(RECOMENDACAO_RE)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s, i) => (i === 0 && !descricao.trimStart().match(/^recomenda/i) ? s : `* ${s}`))
+      .join('\n');
+  }
+
+  // Formato 2: já tem bullets \n com "* " ou "- " — não mexe
+  if (/\n[*\-] /.test(descricao)) return descricao;
+
+  // Formato 3: frases corridas separadas por ". " sem bullets
+  // Converte cada sentença em bullet se houver pelo menos 2 frases
+  const sentencas = descricao
+    .split(/\.\s+/)
+    .map((s) => s.trim().replace(/\.$/, ''))
+    .filter((s) => s.length > 10);
+
+  if (sentencas.length >= 2) {
+    return sentencas.map((s) => `* ${s}.`).join('\n');
+  }
+
+  return descricao;
+}
+
 function parseBullets(descricao: string): { bullets: string[]; intro: string } {
-  const linhas = descricao.split('\n').filter((l) => !isGarbage(l));
+  const normalizado = normalizarDescricao(descricao);
+  const linhas = normalizado.split('\n').filter((l) => !isGarbage(l));
   const bullets: string[] = [];
   const introParts: string[] = [];
 

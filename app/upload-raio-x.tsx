@@ -10,6 +10,8 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { visionService } from '../src/services/visionService';
+import { avaliacaoService } from '../src/services/avaliacaoService';
+import { useAuth } from '../src/context/AuthContext';
 import { ProgressBar } from '../src/components/ui/ProgressBar';
 import { Button } from '../src/components/ui/Button';
 import { Card } from '../src/components/ui/Card';
@@ -20,6 +22,7 @@ const MENSAGENS = ['Enviando imagem...', 'Detectando densidade óssea...', 'Gera
 
 export default function UploadRaioXScreen() {
   const { avaliacaoId } = useLocalSearchParams<{ avaliacaoId: string }>();
+  const { paciente } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [progresso, setProgresso] = useState(0);
@@ -46,7 +49,7 @@ export default function UploadRaioXScreen() {
     const ok = await solicitarPermissao('camera');
     if (!ok) return;
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.8,
       allowsEditing: true,
     });
@@ -57,7 +60,7 @@ export default function UploadRaioXScreen() {
     const ok = await solicitarPermissao('galeria');
     if (!ok) return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.8,
       allowsEditing: true,
     });
@@ -65,7 +68,12 @@ export default function UploadRaioXScreen() {
   };
 
   const analisar = async () => {
-    if (!imageUri || !avaliacaoId) return;
+    if (!imageUri) return;
+    if (!paciente) {
+      Alert.alert('Erro', 'Sessão expirada. Faça login novamente.');
+      return;
+    }
+
     setLoading(true);
     setProgresso(0);
     setMsgIndex(0);
@@ -76,18 +84,46 @@ export default function UploadRaioXScreen() {
     }, 2800);
 
     try {
-      const radiografia = await visionService.analisarRaioX(imageUri, Number(avaliacaoId));
+      // Se veio sem avaliacaoId (acesso direto pela home), usa a avaliação mais recente
+      let idAvaliacao = avaliacaoId ? Number(avaliacaoId) : null;
+      if (!idAvaliacao) {
+        const historico = await avaliacaoService.buscarHistorico(paciente.id);
+        const ultima = historico.avaliacoes?.[0];
+        if (ultima) {
+          idAvaliacao = ultima.id;
+        } else {
+          // Nenhuma avaliação existe ainda — cria uma base para vincular o raio-X
+          const avaliacao = await avaliacaoService.criar({ pacienteId: paciente.id, scoreRisco: 0 });
+          idAvaliacao = avaliacao.id;
+        }
+      }
+
+      // Tenta analisar o raio-X — se a API de visão estiver fora, navega sem o resultado
+      let radiografiaParam: string | undefined;
+      try {
+        const radiografia = await visionService.analisarRaioX(imageUri, idAvaliacao);
+        radiografiaParam = JSON.stringify(radiografia);
+      } catch {
+        Alert.alert(
+          'Serviço de imagem indisponível',
+          'A análise do raio-X está temporariamente fora do ar. Seu questionário foi salvo — veja seu resultado abaixo.',
+          [{ text: 'OK' }]
+        );
+      }
+
       clearInterval(intervalo);
       setProgresso(1);
       router.push({
         pathname: '/resultado',
-        params: { avaliacaoId, radiografia: JSON.stringify(radiografia) },
+        params: radiografiaParam
+          ? { avaliacaoId: idAvaliacao, radiografia: radiografiaParam }
+          : { avaliacaoId: idAvaliacao },
       });
     } catch (error: any) {
       clearInterval(intervalo);
       const msg =
-        error.response?.data?.message ?? 'Não foi possível analisar a imagem. Tente novamente.';
-      Alert.alert('Erro na análise', msg);
+        error.response?.data?.message ?? 'Não foi possível registrar a avaliação. Tente novamente.';
+      Alert.alert('Erro', msg);
     } finally {
       setLoading(false);
     }
