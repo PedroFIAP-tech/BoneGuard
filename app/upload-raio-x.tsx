@@ -3,77 +3,39 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { visionService } from '../src/services/visionService';
 import { avaliacaoService } from '../src/services/avaliacaoService';
 import { useAuth } from '../src/context/AuthContext';
+import { storage } from '../src/utils/storage';
 import { ProgressBar } from '../src/components/ui/ProgressBar';
-import { Button } from '../src/components/ui/Button';
 import { Card } from '../src/components/ui/Card';
-import { colors } from '../src/styles/theme';
+import { colors, fonts } from '../src/styles/theme';
 import { styles } from '../src/styles/upload-raio-x.styles';
 
-const MENSAGENS = ['Enviando imagem...', 'Detectando densidade óssea...', 'Gerando diagnóstico...'];
+const MENSAGENS = ['Baixando imagem...', 'Detectando densidade óssea...', 'Gerando diagnóstico...'];
 
 export default function UploadRaioXScreen() {
   const { avaliacaoId } = useLocalSearchParams<{ avaliacaoId: string }>();
   const { paciente } = useAuth();
-  const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [progresso, setProgresso] = useState(0);
   const [msgIndex, setMsgIndex] = useState(0);
 
-  const solicitarPermissao = async (tipo: 'camera' | 'galeria') => {
-    if (tipo === 'camera') {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permissão negada', 'Precisamos de acesso à câmera para continuar.');
-        return false;
-      }
-    } else {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permissão negada', 'Precisamos de acesso à galeria para continuar.');
-        return false;
-      }
-    }
-    return true;
+  const buscarAvaliacaoExistente = async (): Promise<number | null> => {
+    if (avaliacaoId) return Number(avaliacaoId);
+    const historico = await avaliacaoService.buscarHistorico(paciente!.id);
+    return historico.avaliacoes?.[0]?.id ?? null;
   };
 
-  const abrirCamera = async () => {
-    const ok = await solicitarPermissao('camera');
-    if (!ok) return;
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsEditing: true,
-    });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
-  };
-
-  const abrirGaleria = async () => {
-    const ok = await solicitarPermissao('galeria');
-    if (!ok) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsEditing: true,
-    });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
-  };
-
-  const analisar = async () => {
-    if (!imageUri) return;
+  const analisarExemplo = async () => {
     if (!paciente) {
       Alert.alert('Erro', 'Sessão expirada. Faça login novamente.');
       return;
     }
-
     setLoading(true);
     setProgresso(0);
     setMsgIndex(0);
@@ -84,46 +46,19 @@ export default function UploadRaioXScreen() {
     }, 2800);
 
     try {
-      // Se veio sem avaliacaoId (acesso direto pela home), usa a avaliação mais recente
-      let idAvaliacao = avaliacaoId ? Number(avaliacaoId) : null;
-      if (!idAvaliacao) {
-        const historico = await avaliacaoService.buscarHistorico(paciente.id);
-        const ultima = historico.avaliacoes?.[0];
-        if (ultima) {
-          idAvaliacao = ultima.id;
-        } else {
-          // Nenhuma avaliação existe ainda — cria uma base para vincular o raio-X
-          const avaliacao = await avaliacaoService.criar({ pacienteId: paciente.id, scoreRisco: 0 });
-          idAvaliacao = avaliacao.id;
-        }
-      }
-
-      // Tenta analisar o raio-X — se a API de visão estiver fora, navega sem o resultado
-      let radiografiaParam: string | undefined;
-      try {
-        const radiografia = await visionService.analisarRaioX(imageUri, idAvaliacao);
-        radiografiaParam = JSON.stringify(radiografia);
-      } catch {
-        Alert.alert(
-          'Serviço de imagem indisponível',
-          'A análise do raio-X está temporariamente fora do ar. Seu questionário foi salvo — veja seu resultado abaixo.',
-          [{ text: 'OK' }]
-        );
-      }
-
+      const [idAvaliacao, radiografia] = await Promise.all([
+        buscarAvaliacaoExistente(),
+        visionService.analisarExemplo(),
+      ]);
+      await storage.setItem('boneguard_ultima_radiografia', JSON.stringify(radiografia));
       clearInterval(intervalo);
       setProgresso(1);
-      router.push({
-        pathname: '/resultado',
-        params: radiografiaParam
-          ? { avaliacaoId: idAvaliacao, radiografia: radiografiaParam }
-          : { avaliacaoId: idAvaliacao },
-      });
+      const params: Record<string, string> = { radiografia: JSON.stringify(radiografia), source: 'raio-x' };
+      if (idAvaliacao) params.avaliacaoId = String(idAvaliacao);
+      router.push({ pathname: '/resultado', params });
     } catch (error: any) {
       clearInterval(intervalo);
-      const msg =
-        error.response?.data?.message ?? 'Não foi possível registrar a avaliação. Tente novamente.';
-      Alert.alert('Erro', msg);
+      Alert.alert('Erro', error?.message ?? 'Não foi possível analisar o exemplo.');
     } finally {
       setLoading(false);
     }
@@ -137,29 +72,29 @@ export default function UploadRaioXScreen() {
 
       <Text style={styles.title}>Análise de Raio-X</Text>
       <Text style={styles.subtitle}>
-        Envie uma radiografia e nossa IA detecta a densidade óssea em segundos — como a NASA faz com astronautas.
+        Nossa IA detecta a densidade óssea em segundos — como a NASA faz com astronautas.
       </Text>
 
-      {imageUri ? (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
-          <TouchableOpacity style={styles.trocar} onPress={() => setImageUri(null)}>
-            <Text style={styles.trocarText}>Trocar imagem</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.botoes}>
-          <TouchableOpacity style={styles.uploadBtn} activeOpacity={0.7} onPress={abrirCamera}>
-            <Text style={styles.uploadIcon}>📷</Text>
-            <Text style={styles.uploadLabel}>Câmera</Text>
-            <Text style={styles.uploadSub}>Fotografar raio-X</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.uploadBtn} activeOpacity={0.7} onPress={abrirGaleria}>
-            <Text style={styles.uploadIcon}>🖼️</Text>
-            <Text style={styles.uploadLabel}>Galeria</Text>
-            <Text style={styles.uploadSub}>Selecionar arquivo</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Botão principal */}
+      {!loading && (
+        <TouchableOpacity
+          style={[styles.uploadBtn, {
+            width: '100%',
+            paddingVertical: 20,
+            flexDirection: 'row',
+            gap: 16,
+            borderColor: colors.accent,
+            borderWidth: 1.5,
+          }]}
+          activeOpacity={0.7}
+          onPress={analisarExemplo}
+        >
+          <Text style={{ fontSize: 32 }}>🩻</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.uploadLabel, { fontSize: 16 }]}>Analisar raio-X de exemplo</Text>
+            <Text style={styles.uploadSub}>Baixa uma imagem real e analisa com a IA</Text>
+          </View>
+        </TouchableOpacity>
       )}
 
       {loading && (
@@ -170,9 +105,19 @@ export default function UploadRaioXScreen() {
         </Card>
       )}
 
-      {imageUri && !loading && (
-        <Button title="Analisar com IA" onPress={analisar} style={styles.analisarBtn} />
-      )}
+      {/* Em breve */}
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 8, opacity: 0.4 }}>
+        <View style={[styles.uploadBtn, { flex: 1, paddingVertical: 14 }]}>
+          <Text style={styles.uploadIcon}>📷</Text>
+          <Text style={styles.uploadLabel}>Câmera</Text>
+          <Text style={[styles.uploadSub, { color: colors.warn, fontSize: 10 }]}>Em breve</Text>
+        </View>
+        <View style={[styles.uploadBtn, { flex: 1, paddingVertical: 14 }]}>
+          <Text style={styles.uploadIcon}>🖼️</Text>
+          <Text style={styles.uploadLabel}>Galeria</Text>
+          <Text style={[styles.uploadSub, { color: colors.warn, fontSize: 10 }]}>Em breve</Text>
+        </View>
+      </View>
 
       <Card style={styles.infoCard}>
         <Text style={styles.infoTitle}>🚀 Precisão de astronauta, para você</Text>

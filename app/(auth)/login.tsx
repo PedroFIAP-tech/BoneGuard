@@ -57,8 +57,8 @@ export default function LoginScreen() {
       showAlert('E-mail inválido', 'Digite um endereço de e-mail válido.');
       return;
     }
-    if (senha.length < 8) {
-      showAlert('Senha muito curta', 'A senha deve ter pelo menos 8 caracteres.');
+    if (senha.length < 6) {
+      showAlert('Senha muito curta', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
     setLoading(true);
@@ -145,7 +145,7 @@ export default function LoginScreen() {
               value={senha}
               onChangeText={setSenha}
               secureTextEntry
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mínimo 6 caracteres"
               returnKeyType="done"
               onSubmitEditing={handleLogin}
             />

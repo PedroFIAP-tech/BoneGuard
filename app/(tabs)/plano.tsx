@@ -64,8 +64,12 @@ function normalizarDescricao(descricao: string): string {
   return descricao;
 }
 
+function stripHtml(text: string): string {
+  return text.replace(/<[^>]*>/g, ' ').replace(/\s{2,}/g, ' ').trim();
+}
+
 function parseBullets(descricao: string): { bullets: string[]; intro: string } {
-  const normalizado = normalizarDescricao(descricao);
+  const normalizado = normalizarDescricao(stripHtml(descricao));
   const linhas = normalizado.split('\n').filter((l) => !isGarbage(l));
   const bullets: string[] = [];
   const introParts: string[] = [];
@@ -157,11 +161,22 @@ export default function PlanoScreen() {
   const carregarPlanos = useCallback(async () => {
     if (!paciente) return;
     try {
-      const historico = await avaliacaoService.buscarHistorico(paciente.id);
+      let historico;
+      try {
+        historico = await avaliacaoService.buscarHistorico(paciente.id);
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          setPlanos([]);
+          setIsLoading(false);
+          return;
+        }
+        throw err;
+      }
       const avaliacoes = historico.avaliacoes ?? [];
 
       if (avaliacoes.length === 0) {
         setPlanos([]);
+        setIsLoading(false);
         return;
       }
 

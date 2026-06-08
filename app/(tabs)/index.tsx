@@ -18,10 +18,9 @@ import { Card } from '../../src/components/ui/Card';
 import { colors } from '../../src/styles/theme';
 import { styles } from '../../src/styles/index.styles';
 
-const ATALHOS = [
+const ATALHOS_BASE = [
   { label: 'Avaliar risco', icon: '📋', route: '/(tabs)/questionario' },
   { label: 'Analisar raio-X', icon: '🦴', route: '/upload-raio-x' },
-  { label: 'Ver resultado', icon: '📊', route: '/resultado' },
   { label: 'Meu plano', icon: '💪', route: '/(tabs)/plano' },
 ];
 
@@ -41,8 +40,12 @@ export default function HomeScreen() {
     try {
       const historico = await avaliacaoService.buscarHistorico(paciente.id);
       setAvaliacoes(historico.avaliacoes ?? []);
-    } catch {
-      setError('Não foi possível carregar as avaliações.');
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        setAvaliacoes([]);
+      } else {
+        setError('Não foi possível carregar as avaliações.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -134,7 +137,7 @@ export default function HomeScreen() {
       {/* Atalhos */}
       <Text style={styles.sectionTitle}>O que você quer fazer?</Text>
       <View style={styles.grid}>
-        {ATALHOS.map((item) => (
+        {ATALHOS_BASE.map((item) => (
           <TouchableOpacity
             key={item.label}
             style={styles.gridItem}
@@ -145,6 +148,17 @@ export default function HomeScreen() {
             <Text style={styles.gridLabel}>{item.label}</Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={[styles.gridItem, !ultima && { opacity: 0.4 }]}
+          activeOpacity={ultima ? 0.7 : 1}
+          onPress={() => {
+            if (!ultima) return;
+            router.push({ pathname: '/resultado', params: { avaliacaoId: ultima.id } });
+          }}
+        >
+          <Text style={styles.gridIcon}>📊</Text>
+          <Text style={styles.gridLabel}>Ver resultado</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Histórico de Evolução */}

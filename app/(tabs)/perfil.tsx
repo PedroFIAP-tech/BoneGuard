@@ -44,7 +44,7 @@ export default function PerfilScreen() {
     { label: 'Idade', valor: paciente?.idade ? `${paciente.idade} anos` : '-' },
     { label: 'Sexo', valor: paciente?.sexo === 'M' ? 'Masculino' : paciente?.sexo === 'F' ? 'Feminino' : '-' },
     { label: 'Peso', valor: paciente?.peso ? `${paciente.peso} kg` : '-' },
-    { label: 'Atividade', valor: paciente?.nivelAtividade ?? '-' },
+    { label: 'Atividade', valor: paciente?.nivelAtividade === 'SEDENTARIO' ? 'Sedentário' : paciente?.nivelAtividade === 'MODERADO' ? 'Moderado' : paciente?.nivelAtividade === 'ATIVO' ? 'Ativo' : '-' },
     { label: 'Histórico Familiar', valor: paciente?.historicoFamiliar ? 'Sim' : 'Não' },
   ];
 
