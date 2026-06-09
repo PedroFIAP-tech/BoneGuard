@@ -11,4 +11,8 @@ export const pacienteService = {
     const res = await api.put<Paciente>(`/pacientes/${id}`, dados);
     return res.data;
   },
+
+  async deletar(id: number): Promise<void> {
+    await api.delete(`/pacientes/${id}`);
+  },
 };

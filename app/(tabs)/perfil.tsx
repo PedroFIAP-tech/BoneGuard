@@ -77,6 +77,11 @@ export default function PerfilScreen() {
 
       {/* Atalhos */}
       <Card style={styles.menuCard}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/editar-perfil')}>
+          <Text style={styles.menuLabel}>✏️  Editar perfil</Text>
+          <Text style={styles.menuChevron}>›</Text>
+        </TouchableOpacity>
+        <View style={styles.divider} />
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/sobre')}>
           <Text style={styles.menuLabel}>ℹ️  Sobre o BoneGuard</Text>
           <Text style={styles.menuChevron}>›</Text>
